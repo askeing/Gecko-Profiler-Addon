@@ -10,26 +10,28 @@ const { prefs } = require("sdk/simple-prefs");
 const { ToggleButton } = require('sdk/ui/button/toggle');
 const { Panel } = require("sdk/panel");
 const fxprefs = require("sdk/preferences/service");
+const pageWorkers = require("sdk/page-worker");
+const pageMod = require("sdk/page-mod");
 
 // a dummy function, to show how tests work.
 // to see how to test this function, look at test/test-index.js
 function dummy(text, callback) {
   asyncStorage.setItem("dummytext", text).then(() => {
     return asyncStorage.getItem("dummytext");
-  }).then(callback);
+}).then(callback);
 }
 
 function getNSSSymbols() {
   return profiler.getSharedLibraryInformation().then(libs => {
-    let loadedNSSLibs = libs.filter(lib => {
-      return lib.pdbName.toLowerCase().startsWith("libnss3");
-    });
-    return Promise.all(loadedNSSLibs.map(lib => {
-      return symbolStore.getSymbols(lib.pdbName, lib.breakpadId, lib.name,
-                                    profiler.platform.platform,
-                                    profiler.platform.arch);
-    }));
-  });
+        let loadedNSSLibs = libs.filter(lib => {
+              return lib.pdbName.toLowerCase().startsWith("libnss3");
+});
+  return Promise.all(loadedNSSLibs.map(lib => {
+        return symbolStore.getSymbols(lib.pdbName, lib.breakpadId, lib.name,
+            profiler.platform.platform,
+            profiler.platform.arch);
+}));
+});
 }
 
 let settings = {
@@ -71,7 +73,7 @@ function startProfiler() {
     enabledFeatures.push("threads");
   }
   profiler.start(settings.buffersize, settings.interval,
-                 enabledFeatures, threads);
+      enabledFeatures, threads);
 }
 
 function toggleProfilerStartStop() {
@@ -80,73 +82,73 @@ function toggleProfilerStartStop() {
       profiler.stop();
     } else {
       startProfiler();
-    }
-  })
+}
+})
 }
 
 const panel = Panel({
-  width: 330,
-  height: 168 + 2,
-  contentURL: self.data.url('panel.html'),
-  contentScriptFile: self.data.url('panel.js'),
-  onHide: () => {
-    try {
-      button.state('window', { checked: false });
-    } catch (e) {}
-  },
+      width: 330,
+      height: 168 + 2,
+      contentURL: self.data.url('panel.html'),
+      contentScriptFile: self.data.url('panel.js'),
+      onHide: () => {
+      try {
+        button.state('window', { checked: false });
+} catch (e) {}
+},
 });
 
 const button = ToggleButton({
-  id: 'gecko-profiler',
-  label: 'Gecko Profiler',
-  icon: self.data.url('img/toolbar_off.png'),
-  onChange: (state) => {
-    if (state.checked) {
-      readPrefs();
-      panel.port.emit('ProfilerStateUpdated', settings);
-      panel.port.emit('ProfilerStateUpdated', { settingsOpen: false });
-      panel.resize(panel.width, 168 + 2);
-      panel.show({ position: button });
-    }
-  },
+      id: 'gecko-profiler',
+      label: 'Gecko Profiler',
+      icon: self.data.url('img/toolbar_off.png'),
+      onChange: (state) => {
+      if (state.checked) {
+  readPrefs();
+  panel.port.emit('ProfilerStateUpdated', settings);
+  panel.port.emit('ProfilerStateUpdated', { settingsOpen: false });
+  panel.resize(panel.width, 168 + 2);
+  panel.show({ position: button });
+}
+},
 });
 
 profiler.addIsRunningObserver(isRunning => {
   button.icon = isRunning ? self.data.url('img/toolbar_on.png') : self.data.url('img/toolbar_off.png');
-  panel.port.emit('ProfilerStateUpdated', { isRunning });
+panel.port.emit('ProfilerStateUpdated', { isRunning });
 });
 
 panel.port.on('ProfilerControlEvent', e => {
   switch (e.type) {
-    case 'StartProfiler':
-      startProfiler();
-      break;
-    case 'StopProfiler':
-      profiler.stop();
-      break;
-    case 'CaptureProfile':
-      panel.hide();
-      collectProfile();
-      break;
-    case 'PanelHeightUpdated':
-      panel.resize(panel.width, e.height + 2);
-      break;
-    case 'ChangeSetting': {
-      const changedSettings = Object.assign({}, e);
-      delete changedSettings.type;
-      Object.assign(settings, changedSettings);
-      setPrefs();
-      break;
-    }
-    case 'ChangeFeature': {
-      const changedFeatures = Object.assign({}, e);
-      delete changedFeatures.type;
-      Object.assign(settings.features, changedFeatures);
-      setPrefs();
-      break;
-    }
-    default:
+case 'StartProfiler':
+  startProfiler();
+  break;
+case 'StopProfiler':
+  profiler.stop();
+  break;
+case 'CaptureProfile':
+  panel.hide();
+  collectProfile();
+  break;
+case 'PanelHeightUpdated':
+  panel.resize(panel.width, e.height + 2);
+  break;
+case 'ChangeSetting': {
+    const changedSettings = Object.assign({}, e);
+    delete changedSettings.type;
+    Object.assign(settings, changedSettings);
+    setPrefs();
+    break;
   }
+case 'ChangeFeature': {
+    const changedFeatures = Object.assign({}, e);
+    delete changedFeatures.type;
+    Object.assign(settings.features, changedFeatures);
+    setPrefs();
+    break;
+  }
+default:
+}
 });
 
 function makeProfileAvailableToTab(profile, tab) {
@@ -156,20 +158,20 @@ function makeProfileAvailableToTab(profile, tab) {
   mm.sendAsyncMessage("GeckoProfilerAddon:Init", profile);
   mm.addMessageListener('GeckoProfilerAddon:GetSymbolTable', e => {
     const { pdbName, breakpadId } = e.data;
-    symbolStore.getSymbols(pdbName, breakpadId).then(result => {
-      const [addr, index, buffer] = result;
-      mm.sendAsyncMessage('GeckoProfilerAddon:GetSymbolTableReply', {
-        status: 'success',
-        pdbName, breakpadId, result: [addr, index, buffer]
-      });
-    }, error => {
-      mm.sendAsyncMessage('GeckoProfilerAddon:GetSymbolTableReply', {
-        status: 'error',
-        pdbName, breakpadId,
-        error: `${error}`,
-      });
-    })
+  symbolStore.getSymbols(pdbName, breakpadId).then(result => {
+    const [addr, index, buffer] = result;
+  mm.sendAsyncMessage('GeckoProfilerAddon:GetSymbolTableReply', {
+    status: 'success',
+    pdbName, breakpadId, result: [addr, index, buffer]
   });
+}, error => {
+    mm.sendAsyncMessage('GeckoProfilerAddon:GetSymbolTableReply', {
+      status: 'error',
+      pdbName, breakpadId,
+      error: `${error}`,
+    });
+  })
+});
 }
 
 function collectProfile() {
@@ -179,21 +181,21 @@ function collectProfile() {
 
   var profilePromise = profiler.getProfile();
   var tabOpenPromise = new Promise((resolve, reject) => {
-    tabs.open({
-      url: prefs.reportUrl,
-      onReady: resolve
-    });
-  });
+        tabs.open({
+        url: prefs.reportUrl,
+        onReady: resolve
+      });
+});
   var symbolStorePrimingPromise =
-    profiler.getSharedLibraryInformation().then(sli => symbolStore.prime(sli, profiler.platform));
+      profiler.getSharedLibraryInformation().then(sli => symbolStore.prime(sli, profiler.platform));
 
   Promise.all([profilePromise, tabOpenPromise, symbolStorePrimingPromise]).then(function ([profile, tab]) {
     makeProfileAvailableToTab(profile, tab);
   }).catch(error => {
     console.log("error getting profile:");
-    console.log(error)
-    tabOpenPromise.then(tab => tab.url = `data:text/html,${error}`);
-  }).then(function () {
+  console.log(error)
+  tabOpenPromise.then(tab => tab.url = `data:text/html,${error}`);
+}).then(function () {
     // Resume the profiler after profiler page is opened.
     if (profiler.isRunning()) {
       profiler.resume();
@@ -210,6 +212,70 @@ let collectHotKey = Hotkey({
   combo: "control-shift-2",
   onPress: collectProfile
 });
+
+function writeBinaryDataToFile(data, filename) {
+  // Saving file ...
+  var fileIO = require("sdk/io/file");
+  var ByteWriter = fileIO.open(filename, "wb");
+  if (!ByteWriter.closed) {
+    ByteWriter.write(data);
+    ByteWriter.close();
+  }
+}
+
+function startProfilingForRemoteCall() {
+
+  perf_pmod = pageMod.PageMod({
+    include: "https://perf-html.io/from-addon/*",
+    contentScriptWhen: "end",
+    contentScriptFile: self.data.url("ws/profile-saver.js"),
+    //contentScriptOptions: {
+    //  local_path: local_path
+    //},
+    onAttach: function(worker) {
+      worker.port.on("startReply", function () {
+        // opening profiling page, and reply okay after finished
+        ws_worker.port.emit("reply", 'okay');
+      });
+      worker.port.on("getfileReply", function (ret_object) {
+        // getting the profiling file, and reply file path
+        var data = ret_object.result;
+        var filename = ret_object.filename;
+        writeBinaryDataToFile(data, filename);
+        ws_worker.port.emit("reply", filename);
+      });
+      worker.port.on("getlinkReply", function (shareLink) {
+        // getting the profiling link, and reply link
+        ws_worker.port.emit("reply", shareLink);
+      });
+    }
+  });
+
+  collectProfile();
+}
+
+ws_worker = pageWorkers.Page({
+  contentScriptFile: self.data.url("ws/client.js"),
+  contentURL: self.data.url("ws/client.html"),
+  onMessage: function(ret_message) {
+    // Add-on Script Get the message from ws/client.js
+    ret_object = JSON.parse(ret_message);
+    console.log("Get Command: " + ret_object.command);
+    // message will has two part, command and data.
+    if (ret_object.command == 'start') {
+      // opening profiling page
+      startProfilingForRemoteCall();
+    } else if (ret_object.command == 'getfile') {
+      // getting the profiling file
+      var local_path = ret_object.data;
+      perf_pmod.port.emit("getfile", local_path);
+    } else if (ret_object.command == 'getlink') {
+      // getting the profiling link
+      perf_pmod.port.emit("getlink");
+    }
+  }
+});
+
 
 function main(options, callbacks) {
   readPrefs();

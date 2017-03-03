@@ -1,11 +1,11 @@
 {
-  "title": "Gecko Profiler",
-  "name": "geckoprofiler",
-  "id": "jid0-edalmuivkozlouyij0lpdx548bc@jetpack",
-  "version": "2.0.31",
+  "title": "Gecko Profiler (Hasal)",
+  "name": "geckoprofiler-hasal",
+  "id": "53aa88a7-38af-4b37-b22f-10c369103ac8@jetpack",
+  "version": "2.0.31-hasal20170303",
   "description": "Collect platform profiles from Firefox Desktop.",
   "main": "index.js",
-  "author": "Markus Stange <mstange@themasta.com>",
+  "author": "Askeing Yen <askeing@gmail.com>",
   "icon": "icon.png",
   "permissions": {
     "multiprocess": true
