@@ -68,11 +68,23 @@ function on_message(evt) {
     self.postMessage(evt.data);
 }
 
+const RET_SUCCESS = 0;
+const RET_FAIL = 1;
+
 self.port.on("reply", function (message) {
     // reply the message to Web Socket server.
     console.log("Web Socket Reply: " + message);
     ret_object = new Object();
-    ret_object.command = "reply";
+    ret_object.command = RET_SUCCESS;
+    ret_object.data = message;
+    ws.send(JSON.stringify(ret_object));
+});
+
+self.port.on("replyfail", function (message) {
+    // reply the message to Web Socket server.
+    console.log("Web Socket Reply: " + message);
+    ret_object = new Object();
+    ret_object.command = RET_FAIL;
     ret_object.data = message;
     ws.send(JSON.stringify(ret_object));
 });

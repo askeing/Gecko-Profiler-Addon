@@ -17,13 +17,12 @@ function waitForElementToDisplay(selector, time, f_cb) {
 }
 
 function clickSaveFileBtnForDownloadLink(local_path) {
-    var downloadBtnDiv = document.getElementsByClassName("profileSharingProfileDownloadButton")[0];
-    var downloadBtn = downloadBtnDiv.childNodes[0].childNodes[0];
+    var downloadBtn = document.querySelector(".profileSharingProfileDownloadButton > div > input");
     downloadBtn.click();
 
     // wait for 5 seconds, and then get links
     setTimeout(function () {
-        var downloadLinks = document.getElementsByClassName("profileSharingDownloadLink");
+        var downloadLinks = document.querySelectorAll(".profileSharingDownloadLink");
         if(downloadLinks.length >= 2) {
             var secondDownloadLinks = downloadLinks[1];
             var secondDownloadObjectURL = secondDownloadLinks.href;
@@ -61,6 +60,7 @@ function downloadObject(downloadObjectURL, filename) {
 }
 
 function clickShareBtnForLink() {
+    document.querySelector('.filterNavigatorBarItemContent').click();
     var shareBtn = document.querySelector("div.profileSharing .profileSharingShareButtonButton");
     shareBtn.click();
     setTimeout(function () {

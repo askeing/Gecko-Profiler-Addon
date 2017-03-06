@@ -215,37 +215,49 @@ let collectHotKey = Hotkey({
 
 function writeBinaryDataToFile(data, filename) {
   // Saving file ...
-  var fileIO = require("sdk/io/file");
-  var ByteWriter = fileIO.open(filename, "wb");
-  if (!ByteWriter.closed) {
-    ByteWriter.write(data);
-    ByteWriter.close();
+  try {
+    var fileIO = require("sdk/io/file");
+    var ByteWriter = fileIO.open(filename, "wb");
+    if (!ByteWriter.closed) {
+      ByteWriter.write(data);
+      ByteWriter.close();
+      return true;
+    }
+  } catch (e) {
+    console.log("Write to file failed.");
+    return false;
   }
 }
 
-function startProfilingForRemoteCall() {
+var profiling_page_opened = false;
+
+function startProfilingForRemoteCall(enableStartReply) {
 
   perf_pmod = pageMod.PageMod({
     include: "https://perf-html.io/from-addon/*",
     contentScriptWhen: "end",
     contentScriptFile: self.data.url("ws/profile-saver.js"),
-    //contentScriptOptions: {
-    //  local_path: local_path
-    //},
     onAttach: function(worker) {
+      // opening profiling page, and reply okay after finished
       worker.port.on("startReply", function () {
-        // opening profiling page, and reply okay after finished
-        ws_worker.port.emit("reply", 'okay');
+        profiling_page_opened = true;
+        if (enableStartReply) {
+          ws_worker.port.emit("reply", 'okay');
+        }
       });
+      // getting the profiling file, and reply file path
       worker.port.on("getfileReply", function (ret_object) {
-        // getting the profiling file, and reply file path
         var data = ret_object.result;
         var filename = ret_object.filename;
-        writeBinaryDataToFile(data, filename);
-        ws_worker.port.emit("reply", filename);
+        var is_success = writeBinaryDataToFile(data, filename);
+        if (is_success) {
+          ws_worker.port.emit("reply", filename);
+        } else {
+          ws_worker.port.emit("replyfail", "Write to file failed: " + filename);
+        }
       });
+      // getting the profiling link, and reply link
       worker.port.on("getlinkReply", function (shareLink) {
-        // getting the profiling link, and reply link
         ws_worker.port.emit("reply", shareLink);
       });
     }
@@ -263,13 +275,26 @@ ws_worker = pageWorkers.Page({
     console.log("Get Command: " + ret_object.command);
     // message will has two part, command and data.
     if (ret_object.command == 'start') {
-      // opening profiling page
-      startProfilingForRemoteCall();
+      if (profiling_page_opened) {
+        // already open profiling page
+        ws_worker.port.emit("reply", 'okay');
+      } else {
+        // opening profiling page
+        startProfilingForRemoteCall(true);
+      }
     } else if (ret_object.command == 'getfile') {
+      if (!profiling_page_opened) {
+        // not open profiling page, open it first
+        startProfilingForRemoteCall(false);
+      }
       // getting the profiling file
       var local_path = ret_object.data;
       perf_pmod.port.emit("getfile", local_path);
     } else if (ret_object.command == 'getlink') {
+      if (!profiling_page_opened) {
+        // not open profiling page, open it first
+        startProfilingForRemoteCall(false);
+      }
       // getting the profiling link
       perf_pmod.port.emit("getlink");
     }
