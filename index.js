@@ -18,7 +18,7 @@ const pageMod = require("sdk/page-mod");
 function dummy(text, callback) {
   asyncStorage.setItem("dummytext", text).then(() => {
     return asyncStorage.getItem("dummytext");
-}).then(callback);
+  }).then(callback);
 }
 
 function getNSSSymbols() {
@@ -82,8 +82,8 @@ function toggleProfilerStartStop() {
       profiler.stop();
     } else {
       startProfiler();
-}
-})
+    }
+  })
 }
 
 const panel = Panel({
@@ -92,10 +92,10 @@ const panel = Panel({
       contentURL: self.data.url('panel.html'),
       contentScriptFile: self.data.url('panel.js'),
       onHide: () => {
-      try {
-        button.state('window', { checked: false });
-} catch (e) {}
-},
+        try {
+          button.state('window', { checked: false });
+        } catch (e) {}
+      },
 });
 
 const button = ToggleButton({
@@ -103,52 +103,52 @@ const button = ToggleButton({
       label: 'Gecko Profiler',
       icon: self.data.url('img/toolbar_off.png'),
       onChange: (state) => {
-      if (state.checked) {
-  readPrefs();
-  panel.port.emit('ProfilerStateUpdated', settings);
-  panel.port.emit('ProfilerStateUpdated', { settingsOpen: false });
-  panel.resize(panel.width, 168 + 2);
-  panel.show({ position: button });
-}
-},
+        if (state.checked) {
+          readPrefs();
+          panel.port.emit('ProfilerStateUpdated', settings);
+          panel.port.emit('ProfilerStateUpdated', { settingsOpen: false });
+          panel.resize(panel.width, 168 + 2);
+          panel.show({ position: button });
+        }
+      },
 });
 
 profiler.addIsRunningObserver(isRunning => {
   button.icon = isRunning ? self.data.url('img/toolbar_on.png') : self.data.url('img/toolbar_off.png');
-panel.port.emit('ProfilerStateUpdated', { isRunning });
+  panel.port.emit('ProfilerStateUpdated', { isRunning });
 });
 
 panel.port.on('ProfilerControlEvent', e => {
   switch (e.type) {
-case 'StartProfiler':
-  startProfiler();
-  break;
-case 'StopProfiler':
-  profiler.stop();
-  break;
-case 'CaptureProfile':
-  panel.hide();
-  collectProfile();
-  break;
-case 'PanelHeightUpdated':
-  panel.resize(panel.width, e.height + 2);
-  break;
-case 'ChangeSetting': {
-    const changedSettings = Object.assign({}, e);
-    delete changedSettings.type;
-    Object.assign(settings, changedSettings);
-    setPrefs();
-    break;
+    case 'StartProfiler':
+      startProfiler();
+      break;
+    case 'StopProfiler':
+      profiler.stop();
+      break;
+    case 'CaptureProfile':
+      panel.hide();
+      collectProfile();
+      break;
+    case 'PanelHeightUpdated':
+      panel.resize(panel.width, e.height + 2);
+      break;
+    case 'ChangeSetting': {
+      const changedSettings = Object.assign({}, e);
+      delete changedSettings.type;
+      Object.assign(settings, changedSettings);
+      setPrefs();
+      break;
+    }
+    case 'ChangeFeature': {
+      const changedFeatures = Object.assign({}, e);
+      delete changedFeatures.type;
+      Object.assign(settings.features, changedFeatures);
+      setPrefs();
+      break;
+    }
+    default:
   }
-case 'ChangeFeature': {
-    const changedFeatures = Object.assign({}, e);
-    delete changedFeatures.type;
-    Object.assign(settings.features, changedFeatures);
-    setPrefs();
-    break;
-  }
-default:
-}
 });
 
 function makeProfileAvailableToTab(profile, tab) {
