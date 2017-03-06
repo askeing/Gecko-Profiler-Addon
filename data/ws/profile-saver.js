@@ -91,6 +91,7 @@ self.port.on("getlink", function () {
 
 // Wait for symbol tables ...
 var hidden_status_bar = '.symbolicationStatusOverlay.hidden';
+console.log("Open profiling page, and wait for loading symbol table ...");
 waitForElementToDisplay(hidden_status_bar, 1000,
     function () {
         // Wait for symbol tables complete!
