@@ -224,7 +224,7 @@ function writeBinaryDataToFile(data, filename) {
       return true;
     }
   } catch (e) {
-    console.log("Write to file failed.");
+    console.log("Write to " + filename + " failed.");
     return false;
   }
 }
@@ -246,7 +246,8 @@ function startProfilingForRemoteCall(enableStartReply) {
         }
       });
       // getting the profiling file, and reply file path
-      worker.port.on("getfileReply", function (ret_object) {
+      worker.port.on("getfileReply", function (ret_message) {
+        var ret_object = JSON.parse(ret_message);
         var data = ret_object.result;
         var filename = ret_object.filename;
         var is_success = writeBinaryDataToFile(data, filename);
@@ -255,6 +256,10 @@ function startProfilingForRemoteCall(enableStartReply) {
         } else {
           ws_worker.port.emit("replyfail", "Write to file failed: " + filename);
         }
+      });
+      // getting the profiling file failed.
+      worker.port.on("getfileReplyFail", function (error_message) {
+        ws_worker.port.emit("replyfail", "Reading Blob file failed: " + error_message);
       });
       // getting the profiling link, and reply link
       worker.port.on("getlinkReply", function (shareLink) {

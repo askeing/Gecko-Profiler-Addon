@@ -27,12 +27,14 @@ function clickSaveFileBtnForDownloadLink(local_path) {
             var secondDownloadLinks = downloadLinks[1];
             var secondDownloadObjectURL = secondDownloadLinks.href;
             // Downloading secondDownloadObjectURL (gz)
-            downloadObject(secondDownloadObjectURL, local_path + '/FirefoxProfile.json.gz');
+            // The path is platform-specific, so Python controller will handle the os.sep.
+            downloadObject(secondDownloadObjectURL, local_path + 'FirefoxProfile.json.gz');
         } else if (downloadLinks.length == 1) {
             var firstDownloadLinks = downloadLinks[0];
             var firstDownloadObjectURL = firstDownloadLinks.href;
             // Downloading firstDownloadObjectURL (json)
-            downloadObject(firstDownloadObjectURL, local_path + '/FirefoxProfile.json');
+            // The path is platform-specific, so Python controller will handle the os.sep.
+            downloadObject(firstDownloadObjectURL, local_path + 'FirefoxProfile.json');
         }
     }, 5000);
 }
@@ -46,12 +48,27 @@ function downloadObject(downloadObjectURL, filename) {
         if (this.status == 200) {
             var myBlob = this.response;
             var reader = new FileReader();
-            reader.onloadend = function () {
+            reader.onload = function () {
                 // Return Blob Binary String Result
                 var ret_object = new Object();
                 ret_object.result = reader.result;
                 ret_object.filename = filename;
-                self.port.emit("getfileReply", ret_object);
+                self.port.emit("getfileReply", JSON.stringify(ret_object));
+            };
+            reader.onerror = function (evt) {
+                var message = 'An error occurred reading ' + downloadObjectURL + '. ';
+                switch(evt.target.error.code) {
+                    case evt.target.error.NOT_FOUND_ERR:
+                        message += 'File Not Found!';
+                        break;
+                    case evt.target.error.NOT_READABLE_ERR:
+                        message += 'File is not readable.';
+                        break;
+                    case evt.target.error.ABORT_ERR:
+                        message += 'File reading abort.';
+                        break;
+                };
+                self.port.emit("getfileReplyFail", message);
             };
             reader.readAsBinaryString(myBlob);
         }
