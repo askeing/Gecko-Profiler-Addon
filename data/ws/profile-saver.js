@@ -4,7 +4,7 @@
 "use strict";
 
 function waitForElementToDisplay(selector, time, f_cb) {
-    if(document.querySelector(selector)!=null) {
+    if (document.querySelector(selector) != null) {
         // The selector is displayed.
         f_cb();
         return;
@@ -98,12 +98,35 @@ function clickShareBtnForLink() {
     }, 1000)
 }
 
+var retryCounter_ShareFinish = 60;
+function waitForShareFinish() {
+    var permalinkBtnSelector = ".profileSharingPermalinkButtonButton";
+    var permalinkBtn = document.querySelector(permalinkBtnSelector);
+    if (permalinkBtn.value == "Permalink") {
+        // The sharing is finished.
+        self.port.emit("waitlinkfinishReply");
+        return;
+    } else if (retryCounter_ShareFinish < 0) {
+        self.port.emit("waitlinkfinishReplyFail");
+        return;
+    } else {
+        retryCounter_ShareFinish -= 1;
+        setTimeout(function() {
+            waitForShareFinish();
+        }, 5000);
+    }
+}
+
 self.port.on("getfile", function (local_path) {
     clickSaveFileBtnForDownloadLink(local_path);
 });
 
 self.port.on("getlink", function () {
     clickShareBtnForLink();
+});
+
+self.port.on("waitlinkfinish", function () {
+    waitForShareFinish();
 });
 
 // Wait for symbol tables ...

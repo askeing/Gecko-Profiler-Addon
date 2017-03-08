@@ -242,7 +242,7 @@ function startProfilingForRemoteCall(enableStartReply) {
       worker.port.on("startReply", function () {
         profiling_page_opened = true;
         if (enableStartReply) {
-          ws_worker.port.emit("reply", 'okay');
+          ws_worker.port.emit("reply", "okay");
         }
       });
       // getting the profiling file, and reply file path
@@ -264,6 +264,14 @@ function startProfilingForRemoteCall(enableStartReply) {
       // getting the profiling link, and reply link
       worker.port.on("getlinkReply", function (shareLink) {
         ws_worker.port.emit("reply", shareLink);
+      });
+      // waiting for share link finish
+      worker.port.on("waitlinkfinishReply", function () {
+        ws_worker.port.emit("reply", "okay");
+      });
+        // waiting for share link done failed
+      worker.port.on("waitlinkfinishReplyFail", function () {
+        ws_worker.port.emit("replyfail", 'Wait timeout.');
       });
     }
   });
@@ -302,6 +310,13 @@ ws_worker = pageWorkers.Page({
       }
       // getting the profiling link
       perf_pmod.port.emit("getlink");
+    } else if (ret_object.command == 'waitlinkfinish') {
+        if (!profiling_page_opened) {
+          // not open profiling page, no share link.
+          ws_worker.port.emit("replyfail", 'Profiling page was not opened.');
+        }
+        // getting the profiling link
+        perf_pmod.port.emit("waitlinkfinish");
     }
   }
 });
